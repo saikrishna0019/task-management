@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="js/user.js" defer></script> <!-- Link to your JavaScript for user-related functionality -->
+</head>
+<body>
+<header>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark"> <!-- Navigation Bar -->
+        <div class="container-fluid">
+            <h1 class="navbar-brand">User Dashboard</h1>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a href="index.html" class="nav-link" id="logoutBtn">Logout</a> <!-- Logout button -->
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+</header>
+
+<main class="container mt-5">
+    <h2>Your Projects</h2>
+
+    <!-- Button to create a new project -->
+    <button class="btn btn-primary mb-3" id="createProjectBtn">Create Project</button>
+
+    <!-- Container for user projects -->
+    <div id="projectList" class="task-container mt-4">
+        <!-- Project items will be dynamically generated here -->
+    </div>
+
+    <!-- Create Project Modal -->
+    <div class="modal" tabindex="-1" id="createProjectModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create New Project</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="createProjectForm">
+                        <div class="mb-3">
+                            <label for="projectName" class="form-label">Project Name</label>
+                            <input type="text" class="form-control" id="projectName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="projectDescription" class="form-label">Description</label>
+                            <textarea class="form-control" id="projectDescription" rows="3" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="projectDueDate" class="form-label">Due Date</label>
+                            <input type="date" class="form-control" id="projectDueDate" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Create Project</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+<!-- Task Modal (for adding/editing tasks) -->
+<div class="modal" tabindex="-1" id="taskModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Manage Task</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="taskForm">
+                    <div class="mb-3">
+                        <label for="taskName" class="form-label">Task Name</label>
+                        <input type="text" class="form-control" id="taskName" required>
+                    </div>
+
+                    <label for="assignedUser">Assign to User:</label>
+                    <select id="assignedUser" required></select> <!-- Dropdown to select user for task assignment -->
+                    <br>
+
+
+
+                    <div class="mb-3">
+                        <label for="taskDescription" class="form-label">Task Description</label>
+                        <input type="text" class="form-control" id="taskDescription" required>
+                    </div>
+
+
+                    <div class="mb-3">
+                        <label for="taskPriority" class="form-label">Priority</label>
+                        <select class="form-control" id="taskPriority" required>
+                            <option value="LOW">Low</option>
+                            <option value="MEDIUM">Medium</option>
+                            <option value="HIGH">High</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="taskDueDate" class="form-label">Due Date</label>
+                        <input type="date" class="form-control" id="taskDueDate" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Save Task</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script> <!-- Bootstrap JS -->
+
+<script>
+    // Call function to load user projects when the page loads
+    document.addEventListener("DOMContentLoaded", function() {
+        loadUserProjects(); // Function to load all projects for the user
+    });
+    document.addEventListener("DOMContentLoaded", function() {
+        fetchUserList(); // Assuming you will define this function in user.js
+    });
+
+
+
+    // Event listener to show the create project modal
+    document.getElementById("createProjectBtn").addEventListener("click", function() {
+        new bootstrap.Modal(document.getElementById('createProjectModal')).show();
+    });
+
+    // Function to load user projects
+    async function loadUserProjects() {
+        try {
+            const response = await fetch(`http://localhost:8082/api/projects/owner/${localStorage.getItem('userId')}`,{
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json'
+                },
+            });
+            const projects = await response.json();
+
+            const projectListContainer = document.getElementById('projectList');
+            projectListContainer.innerHTML = ''; // Clear existing content
+
+            projects.forEach(project => {
+                const projectDiv = document.createElement('div');
+                projectDiv.classList.add('card', 'mb-3');
+                projectDiv.innerHTML = `
+                        <div class="card-body">
+                            <h5 class="card-title">${project.name}</h5>
+                            <p class="card-text">${project.description}</p>
+                            <p class="card-text"><strong>Due Date:</strong> ${project.deadline}</p>
+                            <button class="btn btn-secondary" onclick="viewProjectTasks(${project.id})">View Tasks</button>
+                             <button class="btn btn-success" onclick="openCreateTaskModal(${project.id})">Create Task</button>
+                            <button class="btn btn-danger" onclick="deleteProject(${project.id})">Delete Project</button>
+                        </div>
+                    `;
+                projectListContainer.appendChild(projectDiv);
+            });
+        } catch (error) {
+            console.error('Error loading projects:', error);
+        }
+    }
+
+    // Function to create a new project
+    document.getElementById("createProjectForm").addEventListener("submit", async function(event) {
+        event.preventDefault();
+
+        const name = document.getElementById('projectName').value;
+        const description = document.getElementById('projectDescription').value;
+        const deadline = document.getElementById('projectDueDate').value
+        const ownerId = localStorage.getItem('userId')
+
+        const newProject = {
+            name,
+            description,
+            deadline,
+            ownerId
+        };
+
+        try {
+            const response = await fetch('http://localhost:8082/api/projects', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(newProject)
+            });
+
+            const createdProject = await response.json();
+            loadUserProjects(); // Reload project list after creation
+            document.getElementById('createProjectModal').querySelector('.btn-close').click(); // Close modal
+        } catch (error) {
+            console.error('Error creating project:', error);
+        }
+    });
+
+
+    function openCreateTaskModal(projectId) {
+        // Store the projectId for later use
+        document.getElementById('taskForm').setAttribute('data-project-id', projectId);
+        new bootstrap.Modal(document.getElementById('taskModal')).show();
+    }
+
+    // Function to create a new project
+
+    // Function to create a new task
+    document.getElementById("taskForm").addEventListener("submit", async function(event) {
+        event.preventDefault();
+
+        const projectId = BigInt(document.getElementById('taskForm').getAttribute('data-project-id'));
+        const title = document.getElementById('taskName').value;
+        const description = document.getElementById('taskDescription').value;
+        const priority = document.getElementById('taskPriority').value;
+        const dueDate = document.getElementById('taskDueDate').value;
+        const assigneeId = document.getElementById('assignedUser').value;
+        const creatorId = localStorage.getItem('userId')
+
+
+        const newTask = {
+            title,
+            description,
+            priority,
+            dueDate,
+            creatorId,
+            assigneeId
+        };
+
+        try {
+            const response = await fetch(`http://localhost:8082/api/tasks?projectId=${projectId}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(newTask)
+            });
+
+            const createdTask = await response.json();
+            // You may want to reload tasks for this project
+            viewProjectTasks(projectId);
+            document.getElementById('taskModal').querySelector('.btn-close').click(); // Close modal
+        } catch (error) {
+            console.error('Error creating task:', error);
+        }
+    });
+
+
+    // Function to view tasks for a specific project
+    async function viewProjectTasks(projectId) {
+        try {
+            const response = await fetch(`http://localhost:8082/api/tasks/project/${projectId}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json'
+                },
+            });
+            const tasks = await response.json();
+
+            let taskListContainer = document.getElementById('taskList');
+
+            // If the task list container doesn't exist, create it
+            if (!taskListContainer) {
+                taskListContainer = document.createElement('div');
+                taskListContainer.id = 'taskList';  // Set the ID
+                document.body.appendChild(taskListContainer);  // Append it to the body or to a specific container
+            }
+
+            // Clear the task list container before adding new tasks
+            taskListContainer.innerHTML = '';
+
+// Create a table with headers
+            let taskListHtml = `
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Task Name</th>
+                <th>Priority</th>
+                <th>Due Date</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+`;
+
+            tasks.forEach(task => {
+                taskListHtml += `
+        <tr>
+            <td>${task.title}</td>
+            <td>${task.priority}</td>
+            <td>${task.dueDate}</td>
+            <td>
+                <button class="btn btn-warning" onclick="editTask(${task.id})">Edit</button>
+                <button class="btn btn-danger" onclick="deleteTask(${task.id})">Delete</button>
+            </td>
+        </tr>
+    `;
+            });
+
+// Close the table and tbody tags
+            taskListHtml += `
+        </tbody>
+    </table>
+`;
+
+// Insert the generated table into the taskListContainer
+            taskListContainer.innerHTML = taskListHtml;
+
+
+            document.getElementById('taskList').innerHTML = taskListHtml;
+        } catch (error) {
+            console.error('Error loading tasks:', error);
+        }
+    }
+
+    // Functions to delete tasks and projects (implementation not shown)
+    async function deleteProject(projectId) {
+        // Logic to delete the project from backend
+    }
+
+    async function deleteTask(taskId) {
+        // Logic to delete the task from backend
+    }
+
+    async function editTask(taskId) {
+        // Logic to edit the task
+    }
+</script>
+</body>
+</html>

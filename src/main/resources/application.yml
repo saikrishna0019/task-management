@@ -1,0 +1,36 @@
+spring:
+  profiles:
+    active: disableReport
+  application:
+    name: task-management
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: "jdbc:postgresql://localhost:5432/task_management"
+    username: postgres
+    password: klu123
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        show_sql: false
+    generate-ddl: false
+
+security:
+  jwt:
+    secret: 5367566B59703373367639792F423F4528482B4D6251655468576D5A71347437
+    expiration: 86400000 # 24 hours
+
+server:
+  port: 8082
+  servlet:
+    context-path:
+
+
+logging:
+  level:
+    org.hibernate.SQL: INFO
+
+
+
